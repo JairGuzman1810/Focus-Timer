@@ -11,7 +11,7 @@ activityCompose = "1.9.3"
 composeBom = "2024.12.01"
 material3WindowSizeClass = "1.4.0-alpha05"
 lifecycleViewmodelCompose = "2.8.7"
-org-jetbrains-kotlin-android = "2.0.0"
+ksp = "2.0.0-1.0.24"
 
 
 [libraries]
@@ -38,6 +38,5 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt-dagger = {id = "com.google.dagger.hilt.android", version.ref = "hiltVersion"}
-org-jetbrains-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "org-jetbrains-kotlin-android" }
-
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 
