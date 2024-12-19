@@ -18,8 +18,16 @@ import com.app.focustimer.core.Constants.Companion.ONE_MIN_IN_SEC
 import com.app.focustimer.core.Constants.Companion.ONE_SEC_IN_MILLIS
 import com.app.focustimer.domain.model.TimerTypeEnum
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class HomeScreenViewModel : ViewModel() {
+/**
+ * HomeScreenViewModel is the ViewModel for the Home Screen of the Focus Timer application.
+ * It manages the application's timer functionality, tracks rounds, and updates UI states.
+ * This class uses constructor injection for its dependencies, facilitated by Dagger Hilt.
+ *
+ * @constructor Injects required dependencies, such as the timer, into the ViewModel.
+ */
+class HomeScreenViewModel @Inject constructor() : ViewModel() {
     // Timer object for managing the countdown
     private lateinit var timer: CountDownTimer
 

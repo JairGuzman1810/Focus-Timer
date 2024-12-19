@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.app.focustimer.R
 import com.app.focustimer.domain.model.TimerTypeEnum
 import com.app.focustimer.presentation.components.AutoResizedText
@@ -39,12 +40,13 @@ import com.app.focustimer.presentation.theme.FocusTimerTheme
 
 /**
  * HomeScreen is the main screen of the Focus Timer app.
- * It manages the timer display, session information, and user actions such as start, reset, and type selection.
+ * Annotated with @Composable to allow it to be used as part of the Compose UI.
  *
  * @param viewModel The ViewModel instance used to manage the UI state of the HomeScreen.
+ *                  The ViewModel is injected by Dagger Hilt using the @hiltViewModel annotation.
  */
 @Composable
-fun HomeScreen(viewModel: HomeScreenViewModel = HomeScreenViewModel()) {
+fun HomeScreen(viewModel: HomeScreenViewModel = hiltViewModel()) {
 
     // State variables to hold the timer values, session type, and round information
     val timeState by remember { mutableStateOf(viewModel.timerValueState) }
