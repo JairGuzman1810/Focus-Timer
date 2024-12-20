@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.app.focustimer.R
 import com.app.focustimer.domain.model.TimerTypeEnum
 import com.app.focustimer.presentation.components.AutoResizedText
@@ -53,6 +57,18 @@ fun HomeScreen(viewModel: HomeScreenViewModel = hiltViewModel()) {
     val timerTypeState by remember { mutableStateOf(viewModel.timerTypeState) }
     val roundsState by remember { mutableStateOf(viewModel.roundsState) }
     val todayTimeState by remember { mutableStateOf(viewModel.todayTimeState) }
+
+    // Retrieves the current LifecycleOwner
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // LaunchedEffect that runs when the HomeScreen composable is first launched or recomposed
+    LaunchedEffect(viewModel) {
+        // Executes the code block when the lifecycle is in the STARTED state.
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            // Calls the ViewModel function to get the timer session data for the current date.
+            viewModel.getTimerSessionByDate()
+        }
+    }
 
     // Main container for the screen content, arranged in a vertical scrollable layout
     Column(
@@ -197,7 +213,10 @@ fun TimerSession(
                 .weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            BorderedIcon(icon = R.drawable.ic_minus, onTap = onDecreaseTap) // Minus icon to decrease time
+            BorderedIcon(
+                icon = R.drawable.ic_minus,
+                onTap = onDecreaseTap
+            ) // Minus icon to decrease time
             Spacer(modifier = Modifier.height(FocusTimerTheme.dimens.spacerMedium)) // Spacer between icon and text
         }
 
@@ -221,7 +240,10 @@ fun TimerSession(
                 .weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            BorderedIcon(icon = R.drawable.ic_plus, onTap = onIncreaseTap) // Plus icon to increase time
+            BorderedIcon(
+                icon = R.drawable.ic_plus,
+                onTap = onIncreaseTap
+            ) // Plus icon to increase time
             Spacer(modifier = Modifier.height(FocusTimerTheme.dimens.spacerMedium)) // Spacer between icon and text
         }
     }
@@ -241,7 +263,8 @@ fun TimerTypeSession(
     onTap: (TimerTypeEnum) -> Unit = {}
 ) {
     val gridCount = 3 // Number of columns in the grid
-    val itemSpacing = Arrangement.spacedBy(FocusTimerTheme.dimens.paddingNormal) // Spacing between items in the grid
+    val itemSpacing =
+        Arrangement.spacedBy(FocusTimerTheme.dimens.paddingNormal) // Spacing between items in the grid
 
     LazyVerticalGrid(
         modifier = modifier
@@ -260,7 +283,7 @@ fun TimerTypeSession(
                     MaterialTheme.colorScheme.primary // Highlight the selected timer type
                 else
                     MaterialTheme.colorScheme.secondary, // Default color for unselected timer types
-                onTap = {onTap(it)} // Handle the tap event for selecting a timer type
+                onTap = { onTap(it) } // Handle the tap event for selecting a timer type
             )
         }
     }

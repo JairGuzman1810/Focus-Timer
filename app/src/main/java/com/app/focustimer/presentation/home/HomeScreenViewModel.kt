@@ -16,8 +16,17 @@ import com.app.focustimer.core.Constants.Companion.ONE_HOUR_IN_MIN
 import com.app.focustimer.core.Constants.Companion.ONE_MIN_IN_MILLIS
 import com.app.focustimer.core.Constants.Companion.ONE_MIN_IN_SEC
 import com.app.focustimer.core.Constants.Companion.ONE_SEC_IN_MILLIS
+import com.app.focustimer.domain.model.Resource
+import com.app.focustimer.domain.model.TimerSessionModel
 import com.app.focustimer.domain.model.TimerTypeEnum
+import com.app.focustimer.domain.usecase.GetTimerSessionByDateUseCase
+import com.app.focustimer.domain.usecase.SaveTimerSessionUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import javax.inject.Inject
 
 /**
@@ -25,9 +34,15 @@ import javax.inject.Inject
  * It manages the application's timer functionality, tracks rounds, and updates UI states.
  * This class uses constructor injection for its dependencies, facilitated by Dagger Hilt.
  *
- * @constructor Injects required dependencies, such as the timer, into the ViewModel.
+ * @constructor Injects the required use cases for interacting with timer session data.
+ * @param getTimerSessionByDateUseCase Use case for retrieving timer session data by date.
+ * @param saveTimerSessionUseCase Use case for saving timer session data.
  */
-class HomeScreenViewModel @Inject constructor() : ViewModel() {
+@HiltViewModel
+class HomeScreenViewModel @Inject constructor(
+    private val getTimerSessionByDateUseCase: GetTimerSessionByDateUseCase,
+    private val saveTimerSessionUseCase: SaveTimerSessionUseCase
+) : ViewModel() {
     // Timer object for managing the countdown
     private lateinit var timer: CountDownTimer
 
@@ -49,6 +64,9 @@ class HomeScreenViewModel @Inject constructor() : ViewModel() {
     // State to track the total time spent today in milliseconds
     private val _todayTimeState = mutableLongStateOf(0)
     val todayTimeState = _todayTimeState // Public state to observe
+
+    // Stores the total time spent on timer sessions for the current day, retrieved from the database.
+    private var _sessionTimerValue: Long = 0
 
     /**
      * Starts the timer with the current timer type and duration.
@@ -74,6 +92,8 @@ class HomeScreenViewModel @Inject constructor() : ViewModel() {
                     _timerValue.longValue = millisUntilFinished
                     // Increments the total time spent today by one second
                     _todayTimeState.value += ONE_SEC_IN_MILLIS
+                    // Update the session timer value
+                    _sessionTimerValue += ONE_SEC_IN_MILLIS
                 }
 
                 /**
@@ -92,6 +112,8 @@ class HomeScreenViewModel @Inject constructor() : ViewModel() {
                     // Increments the round count if starting a new timer session
                     _roundsState.value += 1
                 }
+                // Reset the session timer value when starting a new timer
+                _sessionTimerValue = 0
                 // Marks the timer as active
                 isTimerActive = true
             }
@@ -108,6 +130,7 @@ class HomeScreenViewModel @Inject constructor() : ViewModel() {
     fun onCancelTimer(reset: Boolean = false) {
         // Attempts to cancel the timer if it has been initialized
         try {
+            saveTimerSession()
             timer.cancel() // Stops the timer if it is currently running
         } catch (_: UninitializedPropertyAccessException) {
             // Handles cases where the timer has not been initialized
@@ -179,6 +202,67 @@ class HomeScreenViewModel @Inject constructor() : ViewModel() {
         }
     }
 
+    /**
+     * Retrieves the timer session data for the current date from the database.
+     *
+     * Updates the rounds and today's time states based on the retrieved data.
+     */
+    fun getTimerSessionByDate() {
+        // Calls the use case to get the timer session data for the current date.
+        getTimerSessionByDateUseCase(date = getCurrentDate()).onEach { result ->
+            // Checks if the result is successful.
+            if (result is Resource.Success) {
+                // Updates the rounds state with the retrieved round count or 0 if null.
+                _roundsState.intValue = result.data?.round ?: 0
+                // Updates the today's time state with the retrieved value or 0 if null.
+                _todayTimeState.longValue = result.data?.value ?: 0
+            }
+            // Launches the flow in the ViewModel's scope.
+        }.launchIn(viewModelScope)
+    }
+
+    /**
+     * Saves the current timer session data to the database.
+     *
+     * Creates a TimerSessionModel with the current date and session timer value and then saves it.
+     * Resets the session timer value to 0 after a successful save.
+     */
+    private fun saveTimerSession() {
+        // Creates a TimerSessionModel with the current date and session timer value.
+        val session = TimerSessionModel(
+            date = getCurrentDate(),
+            value = _sessionTimerValue
+        )
+        // Calls the use case to save the timer session.
+        saveTimerSessionUseCase(timerSessionModel = session).onEach { result ->
+            // Handles the result of the save operation.
+            when (result) {
+                // If the save is successful, reset the session timer value.
+                is Resource.Success -> {
+                    _sessionTimerValue = 0
+                }
+                // Do nothing if the operation is loading or an error occurs.
+                is Resource.Loading -> {}
+                is Resource.Error -> {}
+            }
+            // Launches the flow in the ViewModel's scope.
+        }.launchIn(viewModelScope)
+    }
+
+    /**
+     * Gets the current date in the format "dd-MM-yyyy".
+     *
+     * @return The current date as a String.
+     */
+    @SuppressLint("SimpleDateFormat")
+    private fun getCurrentDate(): String {
+        // Gets the current date and time.
+        val currentDate = Calendar.getInstance().time
+        // Creates a date formatter with the specified format.
+        val formatter = SimpleDateFormat("dd-MM-yyyy")
+        // Formats the current date and returns it as a String.
+        return formatter.format(currentDate)
+    }
 
     /**
      * Converts a time value in milliseconds to a "MM:SS" formatted string.
